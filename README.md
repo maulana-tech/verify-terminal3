@@ -1,36 +1,94 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# V-VERIFY (VendorVerify Agent)
+### Terminal 3 Agent Dev Kit Bounty Challenge (Beta)
 
-## Getting Started
+> **"You found us. This is an easter egg beta launch of our Terminal 3 Agent Dev Kit Bounty challenge. Quick challenge. Compete with lesser builders. Real bounty prizes."**
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+V-VERIFY is a decentralized, TEE-enclave-mediated trust broker that automates secure B2B compliance checks between **Buyer Agents** and **Vendor Agents** using the **Terminal 3 Agent Auth SDK**. It showcases a premium, high-fidelity developer experience inspired by professional design language.
+
+## 🚀 Key Features
+
+- **Double-Agent Protocol:** Simulates secure authentication handshake, DID resolution, sanctions screening, and verifiable credential (VC) issuance.
+- **Intel TDX Enclave Decryption:** Implements simulated hardware enclave executions where raw data remains encrypted in storage and only decrypted inside secure enclaves.
+- **Zero-Knowledge Redaction:** Generates W3C Smart Verifiable Credentials (SVCs) that prove compliance while fully redacting sensitive Tax IDs, owner passports, and banking details.
+- **Granular Consent Controls:** Allows vendors to delegate data access to specific buyers, with instantaneous revocation.
+- **Audit Trails:** Commits all onboarding and revoking checks onto an immutable cryptographic ledger (T3N Ledger).
+- **Premium UI/UX:** Built with luxury serif typography (`Cormorant Garamond`), sleek obsidian backgrounds (`#050505`), custom gold accents (`#C8A45D`), and drift background glow animations.
+- **Strict Styling Rules:** Zero emojis/emotes, zero loud color gradients, and zero generic AI robot illustrations.
+
+---
+
+## 🛠️ Architecture
+
+```
+web/
+├── package.json
+├── biome.json
+├── tsconfig.json
+├── src/
+│   ├── app/
+│   │   ├── layout.tsx         # Font loading, layouts, and global styling
+│   │   ├── page.tsx           # Premium V-Verify Marketing Landing Page (/)
+│   │   ├── portal/
+│   │   │   └── page.tsx       # Interactive Agent Simulator Portal (/portal)
+│   │   └── api/               # T3N Simulator Backend SSE Endpoints
+│   │       ├── onboard/
+│   │       ├── vendor/
+│   │       ├── ledger/
+│   │       └── revoke/
+│   ├── components/            # Portal and Marketing subcomponents
+│   │   ├── VendorDashboard.tsx
+│   │   ├── BuyerDashboard.tsx
+│   │   ├── SimulationPanel.tsx
+│   │   ├── AuditLedger.tsx
+│   │   └── marketing/         # FHOX-style premium landing sections
+│   └── lib/
+│       ├── t3n-client.ts      # Enclave client with high-fidelity fallback simulator
+│       └── types.ts
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 💻 Getting Started
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Prerequisites
+- Node.js (v18+)
+- `pnpm` (v8+)
 
-## Learn More
+### 1. Install Dependencies
+```bash
+pnpm install
+```
 
-To learn more about Next.js, take a look at the following resources:
+### 2. Run the Development Server
+```bash
+pnpm dev
+```
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Website Landing Page:** [http://localhost:3000/](http://localhost:3000/)
+- **Compliance Portal:** [http://localhost:3000/portal](http://localhost:3000/portal)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 3. Lint & Format Code
+Verify styling compliance using Biome:
+```bash
+pnpm biome check src
+```
 
-## Deploy on Vercel
+### 4. Build for Production
+Verify that compilation succeeds without errors:
+```bash
+pnpm build
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## ⛓️ Terminal 3 SDK & Enclave Simulation
+
+The backend uses `t3n-client.ts` to interface with the `@terminal3/t3n-sdk` (using `T3nClient`). If credentials are not supplied in the environment, it falls back to a high-fidelity cryptographic simulator that runs:
+1. **ML-KEM** Key Exchange Handshake.
+2. **Intel TDX** secure enclave mount.
+3. Decryption of vendor data inside the enclave.
+4. Secure endpoint query to a whitelisted sanctions API.
+5. On-chain commit of the W3C Verifiable Credential.
