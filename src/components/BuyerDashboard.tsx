@@ -10,6 +10,7 @@ import {
   ShieldAlert,
   TrendingUp,
   UserCheck,
+  X,
 } from "lucide-react";
 import type React from "react";
 import { useEffect, useState } from "react";
@@ -34,6 +35,50 @@ export default function BuyerDashboard({
 }: BuyerDashboardProps) {
   const [inputDid, setInputDid] = useState("");
   const [simulatedYield, setSimulatedYield] = useState(0.0);
+  const [inspectVc, setInspectVc] = useState(false);
+
+  const getRawVcAwardJson = (cred: VerifiableCredential) => {
+    return JSON.stringify(
+      {
+        "@context": [
+          "https://www.w3.org/2018/credentials/v1",
+          "https://t3n.network/contexts/compliance/v1",
+        ],
+        id: cred.id,
+        type: ["VerifiableCredential", "T3NComplianceCredential"],
+        issuer: cred.issuerDid,
+        issuanceDate: cred.issuanceDate,
+        expirationDate: cred.expirationDate,
+        credentialSubject: {
+          id: cred.subjectDid,
+          complianceStatus: "CLEARED",
+          sanctionsVerification: {
+            status: "PASSED",
+            checkedDatabases: ["OFAC_SDN", "EU_CFSP", "UN_SDN"],
+            timestamp: cred.issuanceDate,
+          },
+          kycVerification: {
+            status: "VERIFIED",
+            claimsAttested: [
+              "companyName",
+              "taxId",
+              "passportId",
+              "bankAccount",
+            ],
+          },
+        },
+        proof: {
+          type: "TeeEnclaveSignature2026",
+          created: cred.issuanceDate,
+          proofPurpose: "assertionMethod",
+          verificationMethod: `${cred.issuerDid}#key-1`,
+          jws: "eyJhbGciOiJQUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19...f8a292f1",
+        },
+      },
+      null,
+      2,
+    );
+  };
 
   useEffect(() => {
     if (onboardStatus !== "success") {
@@ -179,9 +224,13 @@ export default function BuyerDashboard({
                         <FileText className="h-3.5 w-3.5" />
                         <span>Verifiable Credential</span>
                       </div>
-                      <span className="text-[9px] font-mono text-stone tracking-wide uppercase">
-                        {credential.id}
-                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setInspectVc(true)}
+                        className="text-[9px] font-mono text-gold/80 hover:text-gold border border-gold/25 hover:border-gold/50 px-2 py-0.5 rounded-sm transition-colors cursor-pointer bg-black/45"
+                      >
+                        Inspect Raw VC
+                      </button>
                     </div>
 
                     <div className="space-y-2 text-xs font-light">
@@ -334,6 +383,58 @@ export default function BuyerDashboard({
           Agent receives only the cryptographic proof.
         </span>
       </div>
+
+      {/* Verifiable Credential Modal */}
+      {inspectVc && credential && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-[#050505] border border-gold/30 w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl relative">
+            {/* Modal header ornaments */}
+            <span className="absolute -top-px -left-px w-4 h-4 border-t border-l border-gold" />
+            <span className="absolute -top-px -right-px w-4 h-4 border-t border-r border-gold" />
+            <span className="absolute -bottom-px -left-px w-4 h-4 border-b border-l border-gold" />
+            <span className="absolute -bottom-px -right-px w-4 h-4 border-b border-r border-gold" />
+
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gold/15">
+              <div className="flex items-center space-x-2">
+                <FileText className="h-4 w-4 text-gold" />
+                <h3 className="serif text-bone text-lg font-light tracking-wide">
+                  Smart Verifiable Credential (W3C JSON-LD)
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setInspectVc(false)}
+                className="text-stone hover:text-gold transition-colors cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto flex-1 space-y-4">
+              <div className="font-sans text-xs text-stone font-light leading-relaxed">
+                This signed payload is generated inside the Intel TDX TEE
+                enclave node and committed to the on-chain registry. Any
+                enterprise counterparty can resolve this standard JSON-LD W3C
+                format using standard DID resolvers.
+              </div>
+
+              <pre className="bg-black/80 border border-gold/10 p-4 rounded-sm text-[10px] font-mono text-gold/90 overflow-x-auto max-h-[50vh] leading-normal select-all">
+                {getRawVcAwardJson(credential)}
+              </pre>
+            </div>
+
+            <div className="px-6 py-4 border-t border-gold/15 bg-black/35 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setInspectVc(false)}
+                className="text-[11px] font-mono tracking-widest uppercase text-gold border border-gold/40 hover:border-gold hover:bg-gold/5 px-5 py-2 transition-all cursor-pointer"
+              >
+                Close Inspector
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Copy, Database } from "lucide-react";
+import { Check, Copy, Database, Eye, X } from "lucide-react";
 import React from "react";
 import type { AuditEntry } from "@/lib/types";
 
@@ -10,15 +10,46 @@ interface AuditLedgerProps {
 
 export default function AuditLedger({ ledger }: AuditLedgerProps) {
   const [copiedHash, setCopiedHash] = React.useState<string | null>(null);
+  const [selectedEntry, setSelectedEntry] = React.useState<AuditEntry | null>(
+    null,
+  );
 
-  const handleCopyHash = (hash: string) => {
+  const handleCopyHash = (hash: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     navigator.clipboard.writeText(hash);
     setCopiedHash(hash);
     setTimeout(() => setCopiedHash(null), 2000);
   };
 
+  // Generate simulated raw transaction payload for the inspector
+  const getRawTransactionJson = (entry: AuditEntry) => {
+    return JSON.stringify(
+      {
+        blockIndex: entry.index,
+        timestamp: entry.timestamp,
+        txHash: entry.txHash,
+        protocol: "T3N_AGENT_AUTH_v1.0",
+        network: "t3n-testnet-public",
+        enclave_attestation: {
+          cpu_secure_mode: "Intel TDX (Trust Domain Extensions)",
+          enclave_hash: `0x${entry.txHash.slice(2, 42)}f8a2`,
+          measurement_status: "PASSED",
+        },
+        payload: {
+          sender: entry.actorDid,
+          recipient: entry.targetDid,
+          action: entry.action,
+          details: entry.details,
+          handshake_cipher: "ML-KEM-768",
+        },
+      },
+      null,
+      2,
+    );
+  };
+
   return (
-    <div className="bg-oxblood/10 border border-gold/15 p-6 md:p-8 flex flex-col h-full backdrop-blur-sm">
+    <div className="bg-oxblood/10 border border-gold/15 p-6 md:p-8 flex flex-col h-full backdrop-blur-sm relative">
       <div className="flex items-center justify-between pb-4 border-b border-gold/10 mb-6">
         <div className="flex items-center space-x-3">
           <Database className="h-5 w-5 text-gold/80" />
@@ -40,14 +71,15 @@ export default function AuditLedger({ ledger }: AuditLedgerProps) {
               <th className="py-3 px-3">Action</th>
               <th className="py-3 px-3">Actor / Target DID</th>
               <th className="py-3 px-3">Transaction Hash</th>
-              <th className="py-3 px-3 text-right">Details</th>
+              <th className="py-3 px-3 text-right">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gold/5 text-xs">
             {[...ledger].reverse().map((entry) => (
               <tr
                 key={entry.index}
-                className="hover:bg-black/20 transition-colors"
+                onClick={() => setSelectedEntry(entry)}
+                className="hover:bg-black/40 transition-colors cursor-pointer group"
               >
                 <td className="py-3.5 px-3 font-mono font-bold text-gold/90">
                   #{String(entry.index).padStart(3, "0")}
@@ -86,7 +118,7 @@ export default function AuditLedger({ ledger }: AuditLedgerProps) {
                     </span>
                     <button
                       type="button"
-                      onClick={() => handleCopyHash(entry.txHash)}
+                      onClick={(e) => handleCopyHash(entry.txHash, e)}
                       className="text-stone/40 hover:text-gold transition-colors cursor-pointer"
                       title="Copy transaction hash"
                     >
@@ -98,17 +130,123 @@ export default function AuditLedger({ ledger }: AuditLedgerProps) {
                     </button>
                   </div>
                 </td>
-                <td
-                  className="py-3.5 px-3 text-right text-stone font-sans max-w-[220px] truncate font-light"
-                  title={entry.details}
-                >
-                  {entry.details}
+                <td className="py-3.5 px-3 text-right">
+                  <button
+                    type="button"
+                    className="inline-flex items-center space-x-1 text-[9px] font-mono tracking-wider uppercase text-gold/60 border border-gold/15 group-hover:border-gold/60 group-hover:text-gold px-2.5 py-1 transition-all bg-black/25"
+                  >
+                    <Eye className="h-3 w-3" />
+                    <span>Inspect</span>
+                  </button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {/* Transaction Details Modal */}
+      {selectedEntry && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-[#050505] border border-gold/30 w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl relative">
+            {/* Modal header ornaments */}
+            <span className="absolute -top-px -left-px w-4 h-4 border-t border-l border-gold" />
+            <span className="absolute -top-px -right-px w-4 h-4 border-t border-r border-gold" />
+            <span className="absolute -bottom-px -left-px w-4 h-4 border-b border-l border-gold" />
+            <span className="absolute -bottom-px -right-px w-4 h-4 border-b border-r border-gold" />
+
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gold/15">
+              <div className="flex items-center space-x-2">
+                <Database className="h-4 w-4 text-gold" />
+                <h3 className="serif text-bone text-lg font-light tracking-wide">
+                  Block #{String(selectedEntry.index).padStart(3, "0")} Details
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedEntry(null)}
+                className="text-stone hover:text-gold transition-colors cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto flex-1 space-y-5">
+              {/* Core block details */}
+              <div className="grid grid-cols-2 gap-4 font-mono text-[11px] bg-black/45 p-4 border border-gold/10 rounded-sm">
+                <div>
+                  <span className="text-stone/60 block mb-0.5">
+                    ACTION TYPE
+                  </span>
+                  <span className="text-gold font-semibold uppercase">
+                    {selectedEntry.action}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-stone/60 block mb-0.5">TIMESTAMP</span>
+                  <span className="text-bone">
+                    {new Date(selectedEntry.timestamp).toLocaleString()}
+                  </span>
+                </div>
+                <div className="col-span-2 pt-2 border-t border-gold/5">
+                  <span className="text-stone/60 block mb-0.5">
+                    TRANSACTION HASH
+                  </span>
+                  <span className="text-bone break-all">
+                    {selectedEntry.txHash}
+                  </span>
+                </div>
+                <div className="col-span-2 pt-2 border-t border-gold/5">
+                  <span className="text-stone/60 block mb-0.5">
+                    SENDER (ACTOR) DID
+                  </span>
+                  <span className="text-bone break-all">
+                    {selectedEntry.actorDid}
+                  </span>
+                </div>
+                <div className="col-span-2 pt-2 border-t border-gold/5">
+                  <span className="text-stone/60 block mb-0.5">
+                    RECIPIENT (TARGET) DID
+                  </span>
+                  <span className="text-bone break-all">
+                    {selectedEntry.targetDid}
+                  </span>
+                </div>
+              </div>
+
+              {/* Precise Enclave execution logs */}
+              <div>
+                <h4 className="text-[10px] font-mono tracking-wider text-gold/80 uppercase mb-2">
+                  Execution attestation
+                </h4>
+                <div className="bg-oxblood/20 border border-gold/15 p-4 text-xs font-light text-bone leading-relaxed">
+                  {selectedEntry.details}
+                </div>
+              </div>
+
+              {/* Raw JSON payload */}
+              <div>
+                <h4 className="text-[10px] font-mono tracking-wider text-gold/80 uppercase mb-2">
+                  Decentralized Ledger Block JSON
+                </h4>
+                <pre className="bg-black/80 border border-gold/10 p-4 rounded-sm text-[10px] font-mono text-gold/90 overflow-x-auto max-h-48 leading-normal select-all">
+                  {getRawTransactionJson(selectedEntry)}
+                </pre>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 border-t border-gold/15 bg-black/35 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setSelectedEntry(null)}
+                className="text-[11px] font-mono tracking-widest uppercase text-gold border border-gold/40 hover:border-gold hover:bg-gold/5 px-5 py-2 transition-all cursor-pointer"
+              >
+                Close Inspector
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
