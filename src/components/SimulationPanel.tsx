@@ -2,7 +2,9 @@
 
 import {
   AlertTriangle,
+  ArrowRight,
   Check,
+  CheckCircle,
   Circle,
   Cpu,
   Play,
@@ -15,12 +17,14 @@ interface SimulationPanelProps {
   steps: SimulationStep[];
   onboardStatus: "idle" | "running" | "success" | "failed";
   activeStepIndex: number;
+  vendorRegistered?: boolean;
 }
 
 export default function SimulationPanel({
   steps,
   onboardStatus,
   activeStepIndex,
+  vendorRegistered = false,
 }: SimulationPanelProps) {
   return (
     <div className="bg-oxblood/10 border border-gold/15 p-6 md:p-8 flex flex-col h-full backdrop-blur-sm">
@@ -44,15 +48,101 @@ export default function SimulationPanel({
           </h3>
 
           {onboardStatus === "idle" ? (
-            <div className="border border-dashed border-gold/15 bg-black/20 p-8 flex flex-col items-center justify-center text-center space-y-3 h-[360px]">
-              <Play className="h-8 w-8 text-gold/30 animate-pulse" />
-              <span className="text-sm text-bone font-light font-mono tracking-wide uppercase">
-                Ready for Onboarding
-              </span>
-              <p className="text-xs text-stone font-light max-w-[280px] leading-relaxed">
-                Trigger the onboarding check on the Buyer side to watch the
-                cryptographic TEE steps execute in real time.
-              </p>
+            <div className="border border-dashed border-gold/15 bg-black/20 flex flex-col h-[360px] overflow-hidden">
+              {/* Header strip */}
+              <div className="px-5 py-3 border-b border-gold/8 flex items-center space-x-2">
+                <Play className="h-3.5 w-3.5 text-gold/40 animate-pulse" />
+                <span className="text-[10px] font-mono text-stone/60 uppercase tracking-widest">
+                  Menunggu trigger onboarding...
+                </span>
+              </div>
+
+              {/* Step guide */}
+              <div className="flex-1 flex flex-col justify-center px-6 py-4 space-y-0">
+                {/* Step 1 */}
+                <div className={`flex items-start space-x-4 p-3.5 border-l-2 ${
+                  vendorRegistered
+                    ? "border-verified/50 bg-verified/5"
+                    : "border-gold/30 bg-black/20"
+                }`}>
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-[10px] font-mono font-bold ${
+                    vendorRegistered
+                      ? "bg-verified/20 text-verified border border-verified/30"
+                      : "bg-gold/10 text-gold border border-gold/25"
+                  }`}>
+                    {vendorRegistered ? <Check className="h-3 w-3" /> : "1"}
+                  </div>
+                  <div>
+                    <div className={`text-[11px] font-mono font-semibold uppercase tracking-wider ${
+                      vendorRegistered ? "text-verified" : "text-gold/80"
+                    }`}>
+                      {vendorRegistered ? "✓ Vendor Terdaftar" : "Daftar sebagai Vendor"}
+                    </div>
+                    <div className="text-[10px] text-stone font-light mt-0.5 leading-relaxed">
+                      {vendorRegistered
+                        ? "DID telah di-generate dan credential dienkripsi ke storage T3N."
+                        : "Isi form di panel Vendor Management Portal → klik \"Daftar Sekarang\"."}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Arrow */}
+                <div className="flex items-center pl-7 py-1">
+                  <div className="w-0.5 h-4 bg-gold/15" />
+                </div>
+
+                {/* Step 2 — this is the key action */}
+                <div className={`flex items-start space-x-4 p-3.5 border-l-2 ${
+                  vendorRegistered
+                    ? "border-gold bg-gold/5 ring-1 ring-gold/20"
+                    : "border-gold/15 bg-black/10 opacity-50"
+                }`}>
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-[10px] font-mono font-bold ${
+                    vendorRegistered
+                      ? "bg-gold/20 text-gold border border-gold/40 animate-pulse"
+                      : "bg-black/40 text-stone/40 border border-gold/10"
+                  }`}>
+                    2
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2">
+                      <div className={`text-[11px] font-mono font-semibold uppercase tracking-wider ${
+                        vendorRegistered ? "text-gold" : "text-stone/40"
+                      }`}>
+                        Klik &quot;Verify Vendor&quot; di Buyer Agent
+                      </div>
+                      {vendorRegistered && (
+                        <ArrowRight className="h-3.5 w-3.5 text-gold animate-bounce" style={{ animationDirection: "alternate" }} />
+                      )}
+                    </div>
+                    <div className="text-[10px] text-stone font-light mt-0.5 leading-relaxed">
+                      Di panel <span className="text-gold/80 font-mono">Buyer Compliance Dashboard</span> di atas → klik{" "}
+                      <span className="text-gold/80 font-mono">&quot;Use Registered Vendor DID&quot;</span> lalu{" "}
+                      <span className="bg-gold/15 text-gold font-mono px-1 py-0.5 rounded-sm">&quot;Verify Vendor&quot;</span>.
+                    </div>
+                  </div>
+                </div>
+
+                {/* Arrow */}
+                <div className="flex items-center pl-7 py-1">
+                  <div className="w-0.5 h-4 bg-gold/15" />
+                </div>
+
+                {/* Step 3 */}
+                <div className="flex items-start space-x-4 p-3.5 border-l-2 border-gold/10 bg-black/10 opacity-40">
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-[10px] font-mono font-bold bg-black/40 text-stone/40 border border-gold/10">
+                    3
+                  </div>
+                  <div>
+                    <div className="text-[11px] font-mono font-semibold uppercase tracking-wider text-stone/40">
+                      Simulasi TEE berjalan otomatis
+                    </div>
+                    <div className="text-[10px] text-stone/40 font-light mt-0.5">
+                      6 langkah kriptografis akan tampil di sini secara live.
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           ) : (
             <div className="space-y-2.5 h-[360px] overflow-y-auto pr-1">

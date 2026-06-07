@@ -508,6 +508,7 @@ export default function PortalPage() {
           steps={steps}
           onboardStatus={onboardStatus}
           activeStepIndex={activeStepIndex}
+          vendorRegistered={!!vendorProfile?.registered}
         />
 
         {/* Cryptographic Audit Ledger */}
