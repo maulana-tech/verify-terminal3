@@ -105,6 +105,65 @@ export default function SandboxPage() {
     fetchData();
   }, [fetchData]);
 
+  const handleAutofillDemo = async () => {
+    try {
+      const mockProfile = {
+        companyName: "AeroSpace Ventures Inc.",
+        taxId: "US-EIN-9920194A",
+        ownerName: "Marcus Aurelius",
+        passportNumber: "P-9201948",
+        bankName: "Global Institutional Bank",
+        bankAccount: "GIB-US-9910-4820",
+        did: "did:t3n:vendor-0x92a3",
+        registered: true,
+        registeredAt: new Date().toISOString(),
+      };
+
+      // 1. Post to /api/vendor to populate server state
+      await fetch("/api/vendor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(mockProfile),
+      });
+
+      // 2. Grant authorization on server state
+      await fetch("/api/revoke", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "grant" }),
+      });
+
+      // 3. Create a valid mock credential
+      const mockCred = {
+        id: "vc:t3n:compliance-0xbc72a",
+        subjectDid: "did:t3n:vendor-0x92a3",
+        issuerDid: "did:t3n:issuer-node-0x7a8f",
+        issuanceDate: new Date().toISOString(),
+        expirationDate: new Date(
+          Date.now() + 365 * 24 * 60 * 60 * 1000,
+        ).toISOString(),
+        claims: {
+          companyName: "AeroSpace Ventures Inc.",
+          taxId: "US-EIN-9920194A",
+          ownerName: "Marcus Aurelius",
+          passportNumber: "P-9201948",
+          bankName: "Global Institutional Bank",
+          bankAccount: "GIB-US-9910-4820",
+        },
+      };
+
+      // 4. Save to client local storage for persistence
+      localStorage.setItem("t3n_vendor_profile", JSON.stringify(mockProfile));
+      localStorage.setItem("t3n_is_authorized", "true");
+      localStorage.setItem("t3n_credential", JSON.stringify(mockCred));
+
+      // 5. Reload synchronized state
+      await fetchData();
+    } catch (err) {
+      console.error("Autofill demo failed:", err);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex-1 bg-black flex flex-col items-center justify-center space-y-4 min-h-screen">
@@ -212,6 +271,7 @@ export default function SandboxPage() {
           vendorProfile={vendorProfile}
           credential={credential}
           isAuthorized={isAuthorized}
+          onAutofillDemo={handleAutofillDemo}
         />
       </main>
 

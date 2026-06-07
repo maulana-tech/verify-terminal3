@@ -16,12 +16,14 @@ interface IntegrationSandboxProps {
   vendorProfile: VendorProfile | null;
   credential: VerifiableCredential | null;
   isAuthorized: boolean;
+  onAutofillDemo?: () => Promise<void>;
 }
 
 export default function IntegrationSandbox({
   vendorProfile,
   credential,
   isAuthorized,
+  onAutofillDemo,
 }: IntegrationSandboxProps) {
   const [activeTab, setActiveTab] = useState<"sso" | "payout" | "lending">(
     "sso",
@@ -262,14 +264,25 @@ export default function IntegrationSandbox({
             )}
 
             {!isLoading && statusType === "error" && (
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 <div className="flex items-center space-x-1.5 text-red-400 text-[10px] font-mono font-semibold uppercase">
                   <Lock className="h-3.5 w-3.5" />
                   <span>Blocked: Compliance Failure</span>
                 </div>
-                <p className="text-[11px] font-mono text-red-300 leading-relaxed">
+                <p className="text-[11px] font-mono text-red-300 leading-relaxed font-light">
                   {statusText}
                 </p>
+                {statusText.includes("SSO FAILED") && onAutofillDemo && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await onAutofillDemo();
+                    }}
+                    className="mt-2 w-full bg-gold/15 hover:bg-gold/25 text-gold border border-gold/30 px-3 py-2 text-[10px] font-mono uppercase tracking-wider transition-colors cursor-pointer text-center"
+                  >
+                    Quick Autofill & Register Demo Vendor
+                  </button>
+                )}
               </div>
             )}
           </div>
