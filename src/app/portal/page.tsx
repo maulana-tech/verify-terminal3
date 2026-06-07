@@ -12,7 +12,6 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import AuditLedger from "@/components/AuditLedger";
 import BuyerDashboard from "@/components/BuyerDashboard";
-import IntegrationSandbox from "@/components/IntegrationSandbox";
 import SimulationPanel from "@/components/SimulationPanel";
 import VendorDashboard from "@/components/VendorDashboard";
 import type {
@@ -339,18 +338,36 @@ export default function PortalPage() {
             </div>
           </Link>
 
-          <div className="flex items-center space-x-4">
-            <Link
-              href="/"
-              className="text-[10px] tracking-[0.2em] uppercase text-stone hover:text-gold border border-gold/20 hover:border-gold/50 px-4 py-1.5 transition-all font-mono"
-            >
-              ← Back to Site
-            </Link>
-            <div className="flex items-center space-x-2 text-[10px] font-mono px-3 py-1.5 bg-black border border-gold/15 rounded-sm">
-              <ShieldCheck className="h-4 w-4 text-verified shrink-0" />
-              <span className="text-stone">
-                T3N: <span className="text-gold">testnet</span>
-              </span>
+          {/* Navigation Links inside Header */}
+          <div className="flex items-center space-x-8">
+            <nav className="hidden md:flex items-center space-x-6 text-[10px] tracking-[0.2em] uppercase font-mono">
+              <Link
+                href="/portal"
+                className="text-gold font-semibold border-b border-gold pb-1 transition-colors"
+              >
+                Dashboard
+              </Link>
+              <Link
+                href="/portal/sandbox"
+                className="text-stone hover:text-gold transition-colors"
+              >
+                Utility Sandbox
+              </Link>
+            </nav>
+
+            <div className="flex items-center space-x-4">
+              <Link
+                href="/"
+                className="text-[10px] tracking-[0.2em] uppercase text-stone hover:text-gold border border-gold/20 hover:border-gold/50 px-4 py-1.5 transition-all font-mono"
+              >
+                ← Back to Site
+              </Link>
+              <div className="flex items-center space-x-2 text-[10px] font-mono px-3 py-1.5 bg-black border border-gold/15 rounded-sm">
+                <ShieldCheck className="h-4 w-4 text-verified shrink-0" />
+                <span className="text-stone">
+                  T3N: <span className="text-gold">testnet</span>
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -383,13 +400,6 @@ export default function PortalPage() {
           steps={steps}
           onboardStatus={onboardStatus}
           activeStepIndex={activeStepIndex}
-        />
-
-        {/* Real-World Utility Integration Sandbox */}
-        <IntegrationSandbox
-          vendorProfile={vendorProfile}
-          credential={credential}
-          isAuthorized={isAuthorized}
         />
 
         {/* Cryptographic Audit Ledger */}
