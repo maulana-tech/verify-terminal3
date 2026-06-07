@@ -161,24 +161,95 @@ export default function PortalPage() {
   const [activeStepIndex, setActiveStepIndex] = useState(-1);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch initial data
+  // Fetch initial data with localStorage sync to handle Vercel serverless cold starts
   const fetchData = useCallback(async () => {
     try {
+      // 1. Try to load from localStorage first
+      let localProfile: VendorProfile | null = null;
+      let localAuth = false;
+      let localCred: VerifiableCredential | null = null;
+      let localLedger: AuditEntry[] = [];
+
+      if (typeof window !== "undefined") {
+        const p = localStorage.getItem("t3n_vendor_profile");
+        const a = localStorage.getItem("t3n_is_authorized");
+        const c = localStorage.getItem("t3n_credential");
+        const l = localStorage.getItem("t3n_ledger");
+
+        if (p) localProfile = JSON.parse(p);
+        localAuth = a === "true";
+        if (c) localCred = JSON.parse(c);
+        if (l) localLedger = JSON.parse(l);
+      }
+
       const vendorRes = await fetch("/api/vendor");
       const vendorData = await vendorRes.json();
-      setVendorProfile(vendorData.profile);
-      setIsAuthorized(vendorData.isAuthorized);
+
+      // If server-side is empty, but we have client-side data, restore it on the server
+      if (!vendorData.profile && localProfile) {
+        // Restore vendor profile on serverless memory
+        await fetch("/api/vendor", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(localProfile),
+        });
+
+        // Restore authorization status
+        if (localAuth) {
+          await fetch("/api/revoke", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "grant" }),
+          });
+        }
+
+        // Re-fetch to synchronize state
+        const refetchRes = await fetch("/api/vendor");
+        const refetchData = await refetchRes.json();
+        setVendorProfile(refetchData.profile);
+        setIsAuthorized(refetchData.isAuthorized);
+      } else {
+        // Use server data and update localStorage
+        setVendorProfile(vendorData.profile);
+        setIsAuthorized(vendorData.isAuthorized);
+
+        if (vendorData.profile) {
+          localStorage.setItem(
+            "t3n_vendor_profile",
+            JSON.stringify(vendorData.profile),
+          );
+        } else {
+          localStorage.removeItem("t3n_vendor_profile");
+        }
+        localStorage.setItem(
+          "t3n_is_authorized",
+          String(vendorData.isAuthorized),
+        );
+      }
+
       setBuyerDid(vendorData.buyerDid);
 
       const ledgerRes = await fetch("/api/ledger");
       const ledgerData = await ledgerRes.json();
+
       setLedger(ledgerData.ledger);
+      if (ledgerData.ledger && ledgerData.ledger.length > 0) {
+        localStorage.setItem("t3n_ledger", JSON.stringify(ledgerData.ledger));
+      } else if (localLedger && localLedger.length > 0) {
+        setLedger(localLedger);
+      }
 
       const activeCred = ledgerData.credentials.find(
-        (c: VerifiableCredential) => c.subjectDid === vendorData.profile?.did,
+        (c: VerifiableCredential) =>
+          c.subjectDid === (vendorData.profile?.did || localProfile?.did),
       );
       if (activeCred) {
         setCredential(activeCred);
+        localStorage.setItem("t3n_credential", JSON.stringify(activeCred));
+        setOnboardStatus("success");
+      } else if (localCred) {
+        setCredential(localCred);
+        localStorage.setItem("t3n_credential", JSON.stringify(localCred));
         setOnboardStatus("success");
       }
     } catch (error) {
@@ -256,6 +327,10 @@ export default function PortalPage() {
           setActiveStepIndex(idx);
         } else if (data.type === "complete") {
           setCredential(data.credential);
+          localStorage.setItem(
+            "t3n_credential",
+            JSON.stringify(data.credential),
+          );
           setOnboardStatus("success");
           eventSource.close();
           fetchData(); // Refresh ledger

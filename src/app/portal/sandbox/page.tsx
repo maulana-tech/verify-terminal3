@@ -19,20 +19,80 @@ export default function SandboxPage() {
 
   const fetchData = useCallback(async () => {
     try {
+      // 1. Try to load from localStorage first
+      let localProfile: VendorProfile | null = null;
+      let localAuth = false;
+      let localCred: VerifiableCredential | null = null;
+
+      if (typeof window !== "undefined") {
+        const p = localStorage.getItem("t3n_vendor_profile");
+        const a = localStorage.getItem("t3n_is_authorized");
+        const c = localStorage.getItem("t3n_credential");
+
+        if (p) localProfile = JSON.parse(p);
+        localAuth = a === "true";
+        if (c) localCred = JSON.parse(c);
+      }
+
       const vendorRes = await fetch("/api/vendor");
       const vendorData = await vendorRes.json();
-      setVendorProfile(vendorData.profile);
-      setIsAuthorized(vendorData.isAuthorized);
+
+      // If server-side is empty, but we have client-side data, restore it on the server
+      if (!vendorData.profile && localProfile) {
+        // Restore vendor profile on serverless memory
+        await fetch("/api/vendor", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(localProfile),
+        });
+
+        // Restore authorization status
+        if (localAuth) {
+          await fetch("/api/revoke", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "grant" }),
+          });
+        }
+
+        // Re-fetch to synchronize state
+        const refetchRes = await fetch("/api/vendor");
+        const refetchData = await refetchRes.json();
+        setVendorProfile(refetchData.profile);
+        setIsAuthorized(refetchData.isAuthorized);
+      } else {
+        // Use server data and update localStorage
+        setVendorProfile(vendorData.profile);
+        setIsAuthorized(vendorData.isAuthorized);
+
+        if (vendorData.profile) {
+          localStorage.setItem(
+            "t3n_vendor_profile",
+            JSON.stringify(vendorData.profile),
+          );
+        } else {
+          localStorage.removeItem("t3n_vendor_profile");
+        }
+        localStorage.setItem(
+          "t3n_is_authorized",
+          String(vendorData.isAuthorized),
+        );
+      }
+
       setBuyerDid(vendorData.buyerDid);
 
       const ledgerRes = await fetch("/api/ledger");
       const ledgerData = await ledgerRes.json();
 
       const activeCred = ledgerData.credentials.find(
-        (c: VerifiableCredential) => c.subjectDid === vendorData.profile?.did,
+        (c: VerifiableCredential) =>
+          c.subjectDid === (vendorData.profile?.did || localProfile?.did),
       );
       if (activeCred) {
         setCredential(activeCred);
+        localStorage.setItem("t3n_credential", JSON.stringify(activeCred));
+      } else if (localCred) {
+        setCredential(localCred);
       }
     } catch (error) {
       console.error("Error fetching data:", error);
