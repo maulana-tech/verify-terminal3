@@ -51,6 +51,26 @@ export default function VendorDashboard({
     setBankAccount("OHL-CH-8820-1110");
   };
 
+  // One-click fill + submit
+  const handleQuickRegister = async () => {
+    setError("");
+    setIsSubmitting(true);
+    try {
+      await onRegister({
+        companyName: "AeroSpace Ventures Inc.",
+        taxId: "US-EIN-9920194A",
+        ownerName: "Marcus Aurelius",
+        passportNumber: "P-9201948",
+        bankName: "Global Institutional Bank",
+        bankAccount: "GIB-US-9910-4820",
+      });
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Registration failed");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (
@@ -229,9 +249,29 @@ export default function VendorDashboard({
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+            {/* ── Quick Register Banner ── */}
+            <div className="bg-gold/5 border border-gold/25 p-3.5 flex items-center justify-between gap-3">
+              <div>
+                <div className="text-[10px] font-mono text-gold uppercase tracking-wider font-semibold">
+                  ⚡ Quick Register Demo
+                </div>
+                <div className="text-[10px] text-stone font-light mt-0.5">
+                  Isi &amp; daftar langsung pakai data demo valid — 1 klik selesai.
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleQuickRegister}
+                disabled={isSubmitting}
+                className="shrink-0 bg-gold hover:bg-gold/85 disabled:opacity-50 text-black font-mono font-semibold text-[10px] tracking-widest uppercase px-4 py-2 transition-colors cursor-pointer whitespace-nowrap"
+              >
+                {isSubmitting ? "Registering..." : "Daftar Sekarang"}
+              </button>
+            </div>
+
             <div className="flex justify-between items-center">
               <h3 className="text-[10px] font-mono tracking-wider text-gold/80 uppercase">
-                Register Compliance Information
+                Atau isi manual
               </h3>
               <div className="flex space-x-2">
                 <button
