@@ -105,7 +105,8 @@ export default function BuyerDashboard({
   };
 
   return (
-    <div className="bg-oxblood/10 border border-gold/15 p-6 md:p-8 flex flex-col h-full justify-between backdrop-blur-sm">
+    <div className="bg-oxblood/10 border border-gold/15 p-6 md:p-8 flex flex-col h-full justify-between relative">
+      <div className="absolute inset-0 backdrop-blur-sm -z-10" />
       <div>
         <div className="flex items-center justify-between pb-4 border-b border-gold/10">
           <div className="flex items-center space-x-3">

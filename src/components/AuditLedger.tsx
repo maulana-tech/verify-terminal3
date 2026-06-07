@@ -49,7 +49,8 @@ export default function AuditLedger({ ledger }: AuditLedgerProps) {
   };
 
   return (
-    <div className="bg-oxblood/10 border border-gold/15 p-6 md:p-8 flex flex-col h-full backdrop-blur-sm relative">
+    <div className="bg-oxblood/10 border border-gold/15 p-6 md:p-8 flex flex-col h-full relative">
+      <div className="absolute inset-0 backdrop-blur-sm -z-10" />
       <div className="flex items-center justify-between pb-4 border-b border-gold/10 mb-6">
         <div className="flex items-center space-x-3">
           <Database className="h-5 w-5 text-gold/80" />
