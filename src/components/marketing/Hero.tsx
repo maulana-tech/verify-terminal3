@@ -9,7 +9,7 @@ export function Hero() {
       {/* atmospheric glows */}
       <div
         aria-hidden
-        className="absolute -left-[10%] top-[15%] w-[55%] h-[65%] rounded-full blur-[140px] animate-drift-gold"
+        className="absolute -left-[10%] top-[15%] w-[55%] h-[65%] rounded-full blur-[140px] opacity-25"
         style={{
           background:
             "radial-gradient(closest-side, rgba(200,164,93,0.42), rgba(200,164,93,0.10) 55%, transparent 75%)",
@@ -17,7 +17,7 @@ export function Hero() {
       />
       <div
         aria-hidden
-        className="absolute -right-[8%] bottom-[5%] w-[55%] h-[70%] rounded-full blur-[150px] animate-drift-blue"
+        className="absolute -right-[8%] bottom-[5%] w-[55%] h-[70%] rounded-full blur-[150px] opacity-20"
         style={{
           background:
             "radial-gradient(closest-side, rgba(77,140,255,0.32), rgba(77,140,255,0.08) 55%, transparent 75%)",

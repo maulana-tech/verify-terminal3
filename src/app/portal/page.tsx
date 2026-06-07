@@ -79,6 +79,7 @@ export default function PortalPage() {
   const [steps, setSteps] = useState<SimulationStep[]>(initialSteps);
   const [activeStepIndex, setActiveStepIndex] = useState(-1);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"vendor" | "buyer">("vendor");
 
   // Fetch initial data
   const fetchData = useCallback(async () => {
@@ -218,21 +219,19 @@ export default function PortalPage() {
   }
 
   return (
-    <div className="flex-1 bg-[#050505] text-bone flex flex-col relative overflow-x-hidden min-h-screen">
-      {/* Drifting Gold Background Circle */}
+    <div className="flex-1 bg-[#050505] text-bone flex flex-col relative overflow-hidden h-screen">
+      {/* Static Atmospheric Glows (Removed keyframe drift animation for zero-lag rendering) */}
       <div
         aria-hidden
-        className="absolute -left-[15%] top-0 w-[55%] h-[65%] rounded-full blur-[160px] opacity-40 pointer-events-none animate-drift-gold z-0"
+        className="absolute -left-[15%] top-0 w-[55%] h-[65%] rounded-full blur-[160px] opacity-25 pointer-events-none z-0"
         style={{
           background:
             "radial-gradient(closest-side, rgba(200,164,93,0.25), transparent 70%)",
         }}
       />
-
-      {/* Drifting Blue Background Circle */}
       <div
         aria-hidden
-        className="absolute -right-[10%] top-[30%] w-[50%] h-[60%] pointer-events-none rounded-full blur-[160px] opacity-35 animate-drift-blue z-0"
+        className="absolute -right-[10%] top-[30%] w-[50%] h-[60%] pointer-events-none rounded-full blur-[160px] opacity-20 z-0"
         style={{
           background:
             "radial-gradient(closest-side, rgba(77,140,255,0.18), transparent 70%)",
@@ -240,7 +239,7 @@ export default function PortalPage() {
       />
 
       {/* Global Navigation Header */}
-      <header className="border-b border-gold/15 bg-black/40 backdrop-blur-md sticky top-0 z-50">
+      <header className="border-b border-gold/15 bg-black/40 backdrop-blur-md z-50 shrink-0">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link
             href="/"
@@ -276,45 +275,80 @@ export default function PortalPage() {
         </div>
       </header>
 
-      {/* Main Workspace Layout */}
-      <main className="max-w-7xl mx-auto px-6 py-8 flex-1 w-full space-y-8 relative z-10">
-        {/* Two Dashboard Panels */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <VendorDashboard
-            profile={vendorProfile}
-            isAuthorized={isAuthorized}
-            buyerDid={buyerDid}
-            onRegister={handleRegister}
-            onToggleAccess={handleToggleAccess}
-          />
-          <BuyerDashboard
-            buyerDid={buyerDid}
-            vendorProfile={vendorProfile}
-            credential={credential}
-            onboardStatus={onboardStatus}
-            onboardError={onboardError}
-            onTriggerOnboard={handleTriggerOnboard}
-          />
+      {/* Main Workspace Layout (Full Height Viewport Constrained) */}
+      <main className="flex-1 max-w-7xl mx-auto px-6 py-6 w-full flex gap-6 overflow-hidden relative z-10">
+        {/* Left Column - Tabbed Agent Workspaces (45% Width) */}
+        <div className="w-[45%] flex flex-col border border-gold/15 bg-black/20 backdrop-blur-md h-full overflow-hidden">
+          {/* Tabs header */}
+          <div className="flex border-b border-gold/15 bg-black/40 shrink-0">
+            <button
+              type="button"
+              onClick={() => setActiveTab("vendor")}
+              className={`flex-1 py-3.5 text-[10px] font-mono tracking-widest uppercase border-r border-gold/15 transition-all cursor-pointer ${
+                activeTab === "vendor"
+                  ? "bg-gold/10 text-gold font-semibold border-b border-b-gold"
+                  : "text-stone hover:text-bone hover:bg-gold/5"
+              }`}
+            >
+              Vendor Portal
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("buyer")}
+              className={`flex-1 py-3.5 text-[10px] font-mono tracking-widest uppercase transition-all cursor-pointer ${
+                activeTab === "buyer"
+                  ? "bg-gold/10 text-gold font-semibold border-b border-b-gold"
+                  : "text-stone hover:text-bone hover:bg-gold/5"
+              }`}
+            >
+              Buyer Workspace
+            </button>
+          </div>
+
+          {/* Active Tab Dashboard Content */}
+          <div className="flex-1 overflow-y-auto">
+            {activeTab === "vendor" ? (
+              <div className="h-full p-2">
+                <VendorDashboard
+                  profile={vendorProfile}
+                  isAuthorized={isAuthorized}
+                  buyerDid={buyerDid}
+                  onRegister={handleRegister}
+                  onToggleAccess={handleToggleAccess}
+                />
+              </div>
+            ) : (
+              <div className="h-full p-2">
+                <BuyerDashboard
+                  buyerDid={buyerDid}
+                  vendorProfile={vendorProfile}
+                  credential={credential}
+                  onboardStatus={onboardStatus}
+                  onboardError={onboardError}
+                  onTriggerOnboard={handleTriggerOnboard}
+                />
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Live Simulation Panel */}
-        <SimulationPanel
-          steps={steps}
-          onboardStatus={onboardStatus}
-          activeStepIndex={activeStepIndex}
-        />
+        {/* Right Column - Simulation & Audit Ledger stacked (55% Width) */}
+        <div className="w-[55%] flex flex-col gap-6 h-full overflow-hidden">
+          {/* Top Panel - Simulation Panel (45% height) */}
+          <div className="h-[45%] border border-gold/15 bg-black/20 backdrop-blur-md overflow-y-auto shrink-0">
+            <SimulationPanel
+              steps={steps}
+              onboardStatus={onboardStatus}
+              activeStepIndex={activeStepIndex}
+            />
+          </div>
 
-        {/* Cryptographic Audit Ledger */}
-        <AuditLedger ledger={ledger} />
+          {/* Bottom Panel - Cryptographic Audit Ledger (55% height) */}
+          <div className="flex-1 border border-gold/15 bg-black/20 backdrop-blur-md overflow-y-auto">
+            <AuditLedger ledger={ledger} />
+          </div>
+        </div>
       </main>
-
-      {/* Footer */}
-      <footer className="relative z-10 border-t border-gold/10 py-5 bg-black/45 text-center mt-auto">
-        <div className="max-w-7xl mx-auto px-6 text-[9px] tracking-widest text-stone/50 uppercase font-mono">
-          Powered by Terminal 3 Network Private Execution Nodes · &quot;Access
-          does not equal transfer.&quot;
-        </div>
-      </footer>
     </div>
   );
 }
