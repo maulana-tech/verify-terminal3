@@ -12,6 +12,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import AuditLedger from "@/components/AuditLedger";
 import BuyerDashboard from "@/components/BuyerDashboard";
+import IntegrationSandbox from "@/components/IntegrationSandbox";
 import SimulationPanel from "@/components/SimulationPanel";
 import VendorDashboard from "@/components/VendorDashboard";
 import type {
@@ -382,6 +383,13 @@ export default function PortalPage() {
           steps={steps}
           onboardStatus={onboardStatus}
           activeStepIndex={activeStepIndex}
+        />
+
+        {/* Real-World Utility Integration Sandbox */}
+        <IntegrationSandbox
+          vendorProfile={vendorProfile}
+          credential={credential}
+          isAuthorized={isAuthorized}
         />
 
         {/* Cryptographic Audit Ledger */}
