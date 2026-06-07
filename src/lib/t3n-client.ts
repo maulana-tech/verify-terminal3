@@ -8,22 +8,23 @@ import type {
 // In-memory simulated state variables
 let vendorProfile: VendorProfile | null = null;
 const credentials: VerifiableCredential[] = [];
-const ledger: AuditEntry[] = [
-  {
-    index: 1,
-    timestamp: new Date(Date.now() - 3600000).toISOString(),
-    txHash:
-      "0x" +
-      Array.from({ length: 64 }, () =>
-        Math.floor(Math.random() * 16).toString(16),
-      ).join(""),
-    actorDid: "did:t3n:genesis",
-    targetDid: "did:t3n:registry",
-    action: "CONTRACT_DEPLOY",
-    details: "Deployed tee:user/contracts::vendor-compliance@1.0.0",
-  },
-];
+const genesisEntry: AuditEntry = {
+  index: 1,
+  timestamp: new Date(Date.now() - 3600000).toISOString(),
+  txHash:
+    "0x" +
+    Array.from({ length: 64 }, () =>
+      Math.floor(Math.random() * 16).toString(16),
+    ).join(""),
+  actorDid: "did:t3n:genesis",
+  targetDid: "did:t3n:registry",
+  action: "CONTRACT_DEPLOY",
+  details: "Deployed tee:user/contracts::vendor-compliance@1.0.0",
+};
+const ledger: AuditEntry[] = [{ ...genesisEntry }];
 const activeDelegations: Record<string, boolean> = {};
+// Session ownership token — hanya browser yang register yang boleh restore state
+let ownerToken: string | null = null;
 
 export class T3NService {
   private static instance: T3NService;
@@ -104,6 +105,10 @@ export class T3NService {
     return this.realDid || this.buyerDid;
   }
 
+  public getOwnerToken(): string | null {
+    return ownerToken;
+  }
+
   public async getLedger(): Promise<AuditEntry[]> {
     return ledger;
   }
@@ -118,6 +123,23 @@ export class T3NService {
 
   public isAuthorized(buyerDid: string): boolean {
     return !!activeDelegations[buyerDid];
+  }
+
+  // Reset semua state ke kondisi awal (unregister)
+  public async resetAll(): Promise<void> {
+    vendorProfile = null;
+    credentials.length = 0;
+    ledger.length = 0;
+    ledger.push({
+      ...genesisEntry,
+      timestamp: new Date(Date.now() - 3600000).toISOString(),
+    });
+    for (const key of Object.keys(activeDelegations)) {
+      delete activeDelegations[key];
+    }
+    ownerToken = null;
+    this.vendorDid = "";
+    this.realDid = "";
   }
 
   // Handshake with T3N Node
@@ -174,6 +196,7 @@ export class T3NService {
   // Register vendor and encrypt details in Storage Network
   public async registerVendor(
     profileInput: Omit<VendorProfile, "did" | "registered">,
+    token?: string,
   ): Promise<VendorProfile> {
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
@@ -188,6 +211,8 @@ export class T3NService {
     };
 
     vendorProfile = profile;
+    // Simpan session ownership token
+    ownerToken = token || Math.random().toString(36).slice(2) + Date.now().toString(36);
     // By default, grant authorization to the default buyer agent
     activeDelegations[this.buyerDid] = true;
 

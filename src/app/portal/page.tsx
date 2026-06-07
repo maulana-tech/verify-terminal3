@@ -161,20 +161,21 @@ export default function PortalPage() {
   const [activeStepIndex, setActiveStepIndex] = useState(-1);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch initial data with localStorage sync to handle Vercel serverless cold starts
+  // Fetch initial data — hanya restore ke server jika browser ini yang punya session (ownerToken match)
   const fetchData = useCallback(async () => {
     try {
-      // 1. Try to load from localStorage first
       let localProfile: VendorProfile | null = null;
       let localAuth = false;
       let localCred: VerifiableCredential | null = null;
       let localLedger: AuditEntry[] = [];
+      let localOwnerToken: string | null = null;
 
       if (typeof window !== "undefined") {
         const p = localStorage.getItem("t3n_vendor_profile");
         const a = localStorage.getItem("t3n_is_authorized");
         const c = localStorage.getItem("t3n_credential");
         const l = localStorage.getItem("t3n_ledger");
+        localOwnerToken = localStorage.getItem("t3n_owner_token");
 
         if (p) localProfile = JSON.parse(p);
         localAuth = a === "true";
@@ -185,16 +186,23 @@ export default function PortalPage() {
       const vendorRes = await fetch("/api/vendor");
       const vendorData = await vendorRes.json();
 
-      // If server-side is empty, but we have client-side data, restore it on the server
-      if (!vendorData.profile && localProfile) {
-        // Restore vendor profile on serverless memory
+      // Hanya restore ke server jika:
+      // 1. Server kosong (cold start), DAN
+      // 2. Browser ini yang punya session (ownerToken di localStorage = ownerToken server atau server belum punya token)
+      const serverIsEmpty = !vendorData.profile;
+      const iOwnsSession =
+        localProfile &&
+        localOwnerToken &&
+        (vendorData.ownerToken === null || vendorData.ownerToken === localOwnerToken);
+
+      if (serverIsEmpty && iOwnsSession) {
+        // Restore profil ke server memory
         await fetch("/api/vendor", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(localProfile),
+          body: JSON.stringify({ ...localProfile, ownerToken: localOwnerToken }),
         });
 
-        // Restore authorization status
         if (localAuth) {
           await fetch("/api/revoke", {
             method: "POST",
@@ -203,28 +211,26 @@ export default function PortalPage() {
           });
         }
 
-        // Re-fetch to synchronize state
         const refetchRes = await fetch("/api/vendor");
         const refetchData = await refetchRes.json();
         setVendorProfile(refetchData.profile);
         setIsAuthorized(refetchData.isAuthorized);
       } else {
-        // Use server data and update localStorage
+        // Pakai data dari server (browser lain yang register, atau session ini)
         setVendorProfile(vendorData.profile);
         setIsAuthorized(vendorData.isAuthorized);
 
-        if (vendorData.profile) {
-          localStorage.setItem(
-            "t3n_vendor_profile",
-            JSON.stringify(vendorData.profile),
-          );
-        } else {
+        // Kalau server punya data milik orang lain, jangan timpa localStorage kita
+        if (vendorData.profile && vendorData.ownerToken === localOwnerToken) {
+          localStorage.setItem("t3n_vendor_profile", JSON.stringify(vendorData.profile));
+          localStorage.setItem("t3n_is_authorized", String(vendorData.isAuthorized));
+        } else if (!vendorData.profile) {
+          // Server kosong tapi kita bukan ownernya, atau memang bersih — clear local juga
           localStorage.removeItem("t3n_vendor_profile");
+          localStorage.removeItem("t3n_is_authorized");
+          localStorage.removeItem("t3n_credential");
+          localStorage.removeItem("t3n_owner_token");
         }
-        localStorage.setItem(
-          "t3n_is_authorized",
-          String(vendorData.isAuthorized),
-        );
       }
 
       setBuyerDid(vendorData.buyerDid);
@@ -235,7 +241,7 @@ export default function PortalPage() {
       setLedger(ledgerData.ledger);
       if (ledgerData.ledger && ledgerData.ledger.length > 0) {
         localStorage.setItem("t3n_ledger", JSON.stringify(ledgerData.ledger));
-      } else if (localLedger && localLedger.length > 0) {
+      } else if (localLedger && localLedger.length > 0 && localOwnerToken) {
         setLedger(localLedger);
       }
 
@@ -247,9 +253,8 @@ export default function PortalPage() {
         setCredential(activeCred);
         localStorage.setItem("t3n_credential", JSON.stringify(activeCred));
         setOnboardStatus("success");
-      } else if (localCred) {
+      } else if (localCred && localOwnerToken) {
         setCredential(localCred);
-        localStorage.setItem("t3n_credential", JSON.stringify(localCred));
         setOnboardStatus("success");
       }
     } catch (error) {
@@ -266,10 +271,15 @@ export default function PortalPage() {
   const handleRegister = async (
     profileData: Omit<VendorProfile, "did" | "registered">,
   ) => {
+    // Generate token kepemilikan session unik untuk browser ini
+    const ownerToken =
+      Math.random().toString(36).slice(2) + Date.now().toString(36);
+    localStorage.setItem("t3n_owner_token", ownerToken);
+
     const res = await fetch("/api/vendor", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(profileData),
+      body: JSON.stringify({ ...profileData, ownerToken }),
     });
 
     if (!res.ok) {
@@ -284,6 +294,28 @@ export default function PortalPage() {
     setSteps(initialSteps);
     setActiveStepIndex(-1);
 
+    await fetchData();
+  };
+
+  const handleReset = async () => {
+    // Reset server state
+    await fetch("/api/vendor", { method: "DELETE" });
+    // Bersihkan semua localStorage
+    localStorage.removeItem("t3n_vendor_profile");
+    localStorage.removeItem("t3n_is_authorized");
+    localStorage.removeItem("t3n_credential");
+    localStorage.removeItem("t3n_ledger");
+    localStorage.removeItem("t3n_owner_token");
+    // Reset semua state React
+    setVendorProfile(null);
+    setIsAuthorized(false);
+    setCredential(null);
+    setOnboardStatus("idle");
+    setOnboardError("");
+    setSteps(initialSteps);
+    setActiveStepIndex(-1);
+    setSelectedEntry(null);
+    setSelectedVc(null);
     await fetchData();
   };
 
@@ -458,6 +490,7 @@ export default function PortalPage() {
             buyerDid={buyerDid}
             onRegister={handleRegister}
             onToggleAccess={handleToggleAccess}
+            onReset={handleReset}
           />
           <BuyerDashboard
             buyerDid={buyerDid}

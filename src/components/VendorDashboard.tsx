@@ -13,6 +13,7 @@ interface VendorDashboardProps {
     data: Omit<VendorProfile, "did" | "registered">,
   ) => Promise<void>;
   onToggleAccess: (action: "revoke" | "grant") => Promise<void>;
+  onReset: () => Promise<void>;
 }
 
 export default function VendorDashboard({
@@ -21,6 +22,7 @@ export default function VendorDashboard({
   buyerDid,
   onRegister,
   onToggleAccess,
+  onReset,
 }: VendorDashboardProps) {
   const [companyName, setCompanyName] = useState("");
   const [taxId, setTaxId] = useState("");
@@ -31,6 +33,8 @@ export default function VendorDashboard({
 
   const [showPii, setShowPii] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
   const [error, setError] = useState("");
 
   const handleAutofill = () => {
@@ -245,6 +249,48 @@ export default function VendorDashboard({
                   )}
                 </div>
               </div>
+            </div>
+
+            {/* ── Unregister / Reset ── */}
+            <div className="pt-4 border-t border-red-900/20 space-y-2">
+              {!confirmReset ? (
+                <button
+                  type="button"
+                  onClick={() => setConfirmReset(true)}
+                  className="w-full text-center py-2 text-[10px] font-mono tracking-wider uppercase text-red-400/70 hover:text-red-400 border border-red-900/20 hover:border-red-900/50 transition-colors cursor-pointer"
+                >
+                  Unregister &amp; Reset Demo
+                </button>
+              ) : (
+                <div className="bg-red-950/15 border border-red-900/30 p-3 space-y-2.5">
+                  <p className="text-[10px] font-mono text-red-300 leading-relaxed">
+                    Ini akan menghapus semua data vendor, credential, dan audit
+                    log dari server dan browser. Yakin?
+                  </p>
+                  <div className="flex space-x-2">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setIsResetting(true);
+                        setConfirmReset(false);
+                        await onReset();
+                        setIsResetting(false);
+                      }}
+                      disabled={isResetting}
+                      className="flex-1 py-2 bg-red-950/30 hover:bg-red-900/40 text-red-300 border border-red-900/40 text-[10px] tracking-wider uppercase font-mono transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      {isResetting ? "Resetting..." : "Ya, Hapus Semua"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmReset(false)}
+                      className="flex-1 py-2 border border-gold/20 hover:border-gold/40 text-stone hover:text-bone text-[10px] tracking-wider uppercase font-mono transition-colors cursor-pointer"
+                    >
+                      Batal
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         ) : (
