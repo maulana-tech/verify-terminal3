@@ -384,17 +384,23 @@ export default function BuyerDashboard({
         </span>
       </div>
 
-      {/* Verifiable Credential Modal */}
+      {/* Verifiable Credential Drawer */}
       {inspectVc && credential && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="bg-[#050505] border border-gold/30 w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl relative">
-            {/* Modal header ornaments */}
-            <span className="absolute -top-px -left-px w-4 h-4 border-t border-l border-gold" />
-            <span className="absolute -top-px -right-px w-4 h-4 border-t border-r border-gold" />
-            <span className="absolute -bottom-px -left-px w-4 h-4 border-b border-l border-gold" />
-            <span className="absolute -bottom-px -right-px w-4 h-4 border-b border-r border-gold" />
+        <div className="fixed inset-0 z-[100] flex justify-end bg-black/60 backdrop-blur-xs">
+          {/* Backdrop click to close */}
+          <button
+            type="button"
+            className="absolute inset-0 cursor-pointer w-full h-full bg-transparent border-0 outline-none"
+            onClick={() => setInspectVc(false)}
+            aria-label="Close"
+          />
 
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gold/15">
+          <div className="relative w-full max-w-lg bg-[#050505] border-l border-gold/20 h-full flex flex-col shadow-2xl z-[101] animate-slide-in">
+            {/* Corner ornaments on left edge */}
+            <span className="absolute -top-px -left-px w-4 h-4 border-t border-l border-gold/40" />
+            <span className="absolute -bottom-px -left-px w-4 h-4 border-b border-l border-gold/40" />
+
+            <div className="flex items-center justify-between px-6 py-5 border-b border-gold/15 shrink-0 bg-black/40">
               <div className="flex items-center space-x-2">
                 <FileText className="h-4 w-4 text-gold" />
                 <h3 className="serif text-bone text-lg font-light tracking-wide">
@@ -423,13 +429,13 @@ export default function BuyerDashboard({
               </pre>
             </div>
 
-            <div className="px-6 py-4 border-t border-gold/15 bg-black/35 flex justify-end">
+            <div className="px-6 py-4 border-t border-gold/15 bg-black/45 flex justify-end shrink-0">
               <button
                 type="button"
                 onClick={() => setInspectVc(false)}
-                className="text-[11px] font-mono tracking-widest uppercase text-gold border border-gold/40 hover:border-gold hover:bg-gold/5 px-5 py-2 transition-all cursor-pointer"
+                className="text-[11px] font-mono tracking-widest uppercase text-gold border border-gold/40 hover:border-gold hover:bg-gold/5 px-6 py-2.5 transition-all cursor-pointer"
               >
-                Close Inspector
+                Close Drawer
               </button>
             </div>
           </div>

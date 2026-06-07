@@ -132,3 +132,16 @@ body {
   opacity: 1;
   transform: translateY(0);
 }
+
+/* Sliding Right Drawer Animation */
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+.animate-slide-in {
+  animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
