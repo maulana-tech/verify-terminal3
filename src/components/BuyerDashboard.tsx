@@ -1,16 +1,18 @@
 "use client";
 
 import {
+  Activity,
   CheckCircle,
   Clock,
   FileText,
   Globe,
   Shield,
   ShieldAlert,
+  TrendingUp,
   UserCheck,
 } from "lucide-react";
 import type React from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { VendorProfile, VerifiableCredential } from "@/lib/types";
 
 interface BuyerDashboardProps {
@@ -31,6 +33,18 @@ export default function BuyerDashboard({
   onTriggerOnboard,
 }: BuyerDashboardProps) {
   const [inputDid, setInputDid] = useState("");
+  const [simulatedYield, setSimulatedYield] = useState(0.0);
+
+  useEffect(() => {
+    if (onboardStatus !== "success") {
+      setSimulatedYield(0.0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setSimulatedYield((y) => y + 0.000027);
+    }, 150);
+    return () => clearInterval(interval);
+  }, [onboardStatus]);
 
   const handleUseRegisteredVendor = () => {
     if (vendorProfile?.did) {
@@ -242,6 +256,65 @@ export default function BuyerDashboard({
                               [REDACTED (TE-SECURE)]
                             </span>
                           </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Agent Escrow & Yield Automation Card */}
+                  <div className="bg-oxblood/20 border border-gold/25 rounded-sm p-4 space-y-4 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-gold/5 rounded-full blur-2xl pointer-events-none" />
+
+                    <div className="flex items-center justify-between pb-2 border-b border-gold/10">
+                      <div className="flex items-center space-x-1.5 text-gold/90 text-xs font-mono">
+                        <Activity className="h-3.5 w-3.5 text-gold" />
+                        <span>Agent Escrow & Automation</span>
+                      </div>
+                      <span className="text-[8px] font-mono border border-gold/30 text-gold bg-gold/5 px-1.5 py-0.5 rounded-sm uppercase tracking-wider font-semibold">
+                        APY Active
+                      </span>
+                    </div>
+
+                    <div className="space-y-3 font-mono text-[10px]">
+                      <div className="flex justify-between items-center text-stone">
+                        <span>Locked Escrow Balance</span>
+                        <span className="text-bone font-semibold">
+                          5,000.00 USDC
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between items-center text-stone">
+                        <span>Yield Optimizer Protocol</span>
+                        <span className="text-gold">
+                          Aave V3 Escrow Optimizer
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between items-center text-stone">
+                        <span>Current Escrow Yield</span>
+                        <span className="text-verified font-bold">
+                          5.42% APY
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between items-center text-stone bg-black/45 p-2 rounded-sm border border-gold/5">
+                        <span className="flex items-center">
+                          <TrendingUp className="h-3 w-3 text-verified mr-1" />
+                          Accrued Yield
+                        </span>
+                        <span className="text-verified font-bold">
+                          {simulatedYield.toFixed(6)} USDC
+                        </span>
+                      </div>
+
+                      <div className="pt-2 border-t border-gold/5 flex flex-col space-y-1.5 text-stone/75 leading-relaxed">
+                        <div className="flex items-center space-x-2 text-[9px] text-verified">
+                          <span className="h-1.5 w-1.5 rounded-full bg-verified animate-ping" />
+                          <span>Auto-Payout Agent: Active</span>
+                        </div>
+                        <div className="text-[9px]">
+                          Payout triggers automatically on the 1st of every
+                          month subject to T3N continuous compliance check.
                         </div>
                       </div>
                     </div>
