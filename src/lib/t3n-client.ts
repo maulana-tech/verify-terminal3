@@ -29,6 +29,9 @@ export class T3NService {
   private static instance: T3NService;
   private buyerDid = "did:t3n:buyer-corp-0x8f2d";
   private vendorDid = "";
+  // biome-ignore lint/suspicious/noExplicitAny: dynamically loaded SDK
+  private realClient: any = null;
+  private realDid = "";
 
   private constructor() {}
 
@@ -37,6 +40,35 @@ export class T3NService {
       T3NService.instance = new T3NService();
     }
     return T3NService.instance;
+  }
+
+  // Helper to load and initialize real T3nClient dynamically
+  private async getRealClient() {
+    const privateKey = process.env.T3N_PRIVATE_KEY;
+    if (!privateKey) return null;
+
+    if (this.realClient) return this.realClient;
+
+    try {
+      console.log("[T3N SDK] Dynamically loading @terminal3/t3n-sdk...");
+      const sdk = await import("@terminal3/t3n-sdk");
+      sdk.setEnvironment("testnet");
+      const wasmComponent = await sdk.loadWasmComponent();
+      const address = sdk.eth_get_address(privateKey);
+
+      const client = new sdk.T3nClient({
+        wasmComponent,
+        handlers: {
+          EthSign: sdk.metamask_sign(address, undefined, privateKey),
+        },
+      });
+
+      this.realClient = client;
+      return client;
+    } catch (err) {
+      console.error("[T3N SDK] Failed to initialize real T3nClient:", err);
+      return null;
+    }
   }
 
   // Helper to generate fake TX hash
@@ -69,7 +101,7 @@ export class T3NService {
   }
 
   public getBuyerDid(): string {
-    return this.buyerDid;
+    return this.realDid || this.buyerDid;
   }
 
   public async getLedger(): Promise<AuditEntry[]> {
@@ -90,6 +122,44 @@ export class T3NService {
 
   // Handshake with T3N Node
   public async handshake(): Promise<boolean> {
+    const client = await this.getRealClient();
+    if (client) {
+      try {
+        console.log("[T3N SDK] Running real testnet handshake...");
+        await client.handshake();
+        const sdk = await import("@terminal3/t3n-sdk");
+        const privateKey = process.env.T3N_PRIVATE_KEY;
+        if (!privateKey) throw new Error("Private key missing");
+        const address = sdk.eth_get_address(privateKey);
+
+        console.log("[T3N SDK] Authenticating on testnet...");
+        const authResult = await client.authenticate(
+          sdk.createEthAuthInput(address),
+        );
+        this.realDid =
+          typeof authResult === "string"
+            ? authResult
+            : authResult?.value || authResult?.toString() || "";
+        console.log(
+          "[T3N SDK] Real authentication successful. DID:",
+          this.realDid,
+        );
+
+        this.logAudit(
+          "did:t3n:node-testnet",
+          "did:t3n:session",
+          "SESSION_HANDSHAKE",
+          `[REAL SDK] Ephemeral session keys established on T3N testnet with DID: ${this.realDid}`,
+        );
+        return true;
+      } catch (err: unknown) {
+        console.error(
+          "[T3N SDK] Real handshake failed, falling back to simulator:",
+          err instanceof Error ? err.message : err,
+        );
+      }
+    }
+
     // Simulating T3N Handshake & session key exchange
     await new Promise((resolve) => setTimeout(resolve, 800));
     this.logAudit(
