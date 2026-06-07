@@ -92,3 +92,24 @@ The backend uses `t3n-client.ts` to interface with the `@terminal3/t3n-sdk` (usi
 3. Decryption of vendor data inside the enclave.
 4. Secure endpoint query to a whitelisted sanctions API.
 5. On-chain commit of the W3C Verifiable Credential.
+
+---
+
+## 🔒 Proof of T3N Node Authentication & Integration
+
+V-VERIFY is verified to connect, perform handshakes, and authenticate using the `@terminal3/t3n-sdk` WASM client against the public **Terminal 3 Testnet Node**.
+
+### Successful Testnet Handshake Log:
+```bash
+Setting environment to testnet...
+Loading WASM component...
+WASM loaded successfully.
+Derived Address: 0x9f37d905cffd253d5261096662a5bb7b9e0e2cef
+Initializing client...
+Performing handshake...
+Handshake successful!
+Authenticating...
+Authenticated successfully. DID: did:t3n:02153a2434e7972d33573f024aedfc530c76a3a3
+```
+
+This derived decentralized identifier (**`did:t3n:02153a2434e7972d33573f024aedfc530c76a3a3`**) represents the authenticated identity of the Buyer Agent on the Terminal 3 Network, registered securely through the private keys configured in our backend `.env.local` service.
